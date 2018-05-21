@@ -26,15 +26,31 @@ def get_table_of_contents_links(scraped_page)
   link_list = link_items.map {|node| node["href"]}
 end
 
+def get_title_and_body(page)
+  title = page.xpath("//h1[contains(@class, 'entry-title')]").text
+  main_body = page.xpath("//div[contains(@class, 'entry-content')]").text
+  title + main_body + "\n"
+end
+
 def get_story_content(story_pages)
   story_sections = story_pages.map do |page|
-    title = page.xpath("//h1[contains(@class, 'entry-title')]").text
-    main_body = page.xpath("//div[contains(@class, 'entry-content')]").text
-    title + main_body + "\n"
+    get_title_and_body(page)
   end
   story_sections
 end
 
+def get_latest_chapter
+  latest_link = get_table_of_contents_links(web_scraper(content_page_url)).last
+  latest_page = web_scraper(latest_link)
+  latest_content = get_title_and_body(latest_page)
+  format_pages(latest_content)
+end
+
+def get_filename
+end
+
+def write_story_to_doc
+end
 
 def format_pages(story_content)
   story_content.each do |page|
