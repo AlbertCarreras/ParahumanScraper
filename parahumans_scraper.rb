@@ -3,6 +3,15 @@ require 'pry'
 require 'nokogiri'
 require 'open-uri'
 
+def run
+  scraped_page = web_scraper(content_page_url)
+  story_page_links = get_table_of_contents_links(scraped_page)
+  story_pages = get_story_pages(story_page_links)
+  story_sections = get_story_content(story_pages)
+  story_sections = format_pages(story_sections)
+  write_story_to_doc(story_sections, get_filename)
+end
+
 def web_scraper(url)
   Nokogiri::HTML(open(url))
 end
@@ -22,8 +31,18 @@ def get_story_pages(link_list)
 end
 
 def get_table_of_contents_links(scraped_page)
-  link_items = scraped_page.xpath("//div[contains(@class, 'entry-content')]/p[contains(@style, 'padding-left')]/a")
+  content_section = scraped_page.xpath("//div[contains(@class, 'entry-content')]")
+  link_items = content_section.xpath(".//a")
   link_list = link_items.map {|node| node["href"]}
+end
+
+def get_latest_page(content_links)
+  latest_link = content_links.last
+  if latest_link.include?("http:")
+    web_scraper(latest_link.gsub("http", "https"))
+  else
+    web_scraper(latest_link)
+  end
 end
 
 def get_title_and_body(page)
@@ -40,17 +59,39 @@ def get_story_content(story_pages)
 end
 
 def get_latest_chapter
-  latest_link = get_table_of_contents_links(web_scraper(content_page_url)).last
-  latest_page = web_scraper(latest_link)
-  latest_content = get_title_and_body(latest_page)
-  format_pages(latest_content)
+  chapter_page_links = get_table_of_contents_links(web_scraper(content_page_url))
+  latest_chapter_page = get_latest_page(chapter_page_links)
+  latest_chapter_text = get_title_and_body(latest_chapter_page)
+  formatted_chapter = format_pages([latest_chapter_text])
+  filename = get_filename
+  append_to_doc(formatted_chapter, filename)
 end
 
 def get_filename
+  puts "Please enter a name for the file to be written: "
+  file_name = gets.chomp
 end
 
-def write_story_to_doc
+def write_story_to_doc(story_sections, filename)
+  file = File.open("#{filename}.txt", "w")
+  story_sections.each do |section|
+    file.write(section)
+  end
+  file.close
 end
+
+def append_to_doc(chapter, filename)
+  file = File.open("#{filename}.txt", "a")
+  file.write(chapter)
+  file.close
+end
+
+# def link_nodes_test
+#   page = web_scraper(content_page_url)
+#   link_list = page.xpath("//a[contains(@href, 'parahumans.net')]")
+#   binding.pry
+#   link_list = link_list.map {|node| node["href"]}
+# end
 
 def format_pages(story_content)
   story_content.each do |page|
@@ -61,32 +102,5 @@ def format_pages(story_content)
   end
 end
 
-# def parse_single_page(page)
-#   header = page.xpath("//h1[contains(@class, 'entry-title')]")
-#   parsed_page = page.xpath("//div[contains(@class, 'entry-content')]/p").text
-#   title_and_story = header.text + parsed_page
-#   title_and_story.gsub!("\n", "\n\n")
-#   formatted_page = title_and_story.gsub!("Previous Chapter", "").gsub!("Next Chapter", "")
-#   file = File.open("single-test.txt", "w")
-#   file.write(title_and_story)
-#   file.close
-# end
-
-scraped_page = web_scraper(content_page_url)
-story_page_links = get_table_of_contents_links(scraped_page)
-story_pages = get_story_pages(story_page_links)
-story_sections = get_story_content(story_pages)
-story_sections = format_pages(story_sections)
-
-# scraped_chapter = web_scraper("https://www.parahumans.net/2017/11/30/daybreak-1-7/")
-# single_page = parse_single_page(scraped_chapter)
-
-puts "Please enter a name for the file to be written: "
-file_name = gets.chomp
-file = File.open("#{file_name}.txt", "w")
-
-story_sections.each do |section|
-  file.write(section)
-end
-
-file.close
+puts Dir.pwd
+get_latest_chapter
