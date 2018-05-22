@@ -62,7 +62,7 @@ def get_latest_chapter
   chapter_page_links = get_table_of_contents_links(web_scraper(content_page_url))
   latest_chapter_page = get_latest_page(chapter_page_links)
   latest_chapter_text = get_title_and_body(latest_chapter_page)
-  formatted_chapter = format_pages([latest_chapter_text])
+  formatted_chapter = format_pages([latest_chapter_text]).join("")
   filename = get_filename
   append_to_doc(formatted_chapter, filename)
 end
@@ -85,13 +85,6 @@ def append_to_doc(chapter, filename)
   file.write(chapter)
   file.close
 end
-
-# def link_nodes_test
-#   page = web_scraper(content_page_url)
-#   link_list = page.xpath("//a[contains(@href, 'parahumans.net')]")
-#   binding.pry
-#   link_list = link_list.map {|node| node["href"]}
-# end
 
 def format_pages(story_content)
   story_content.each do |page|
